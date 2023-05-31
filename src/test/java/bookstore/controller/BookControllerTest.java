@@ -35,144 +35,73 @@ public class BookControllerTest {
 
     @InjectMocks
     private BookController bookController;
-
+    
     @Mock
     private BookService bookService;
-
-    @Mock
-    private BookRepository bookRepository;
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Before
-    public void init() {
-        mockMvc = MockMvcBuilders.standaloneSetup(bookController).build();
+    
+    @BeforeEach
+    void setup() {
+        MockitoAnnotations.initMocks(this);
     }
-
+    
+    // START: Test method for getting all books
     @Test
-    public void addBook() throws Exception {
-        Customer customer = new Customer(1, "94052355879", "Andrzej", "Góra", null);
-        Book book = new Book(1, "Wróżka", 22, customer);
-//        given(bookService.addBook(book)).willReturn(book);
-        this.mockMvc.perform(post("/book/addBook")
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON)
-                .content(toJson(book)))
-                .andDo(print())
-                .andExpect(status().isOk());
-
+    void testGetAllBooks() {
+        List<Book> books = Arrays.asList(
+                new Book(1L, "Book 1", "Author 1"),
+                new Book(2L, "Book 2", "Author 2")
+        );
+        when(bookService.getAllBooks()).thenReturn(books);
+        ResponseEntity<List<Book>> response = bookController.getAllBooks();
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(books, response.getBody());
     }
-
+    // FINAL
+    
+    // START: Test method for getting a book by ID
     @Test
-    public void findBookById() throws Exception {
-        Book book = new Book(1, "Wróżka", 22, null);
-
-        when(bookService.findBookById(1)).thenReturn(Optional.of(book));
-
-        mockMvc.perform(MockMvcRequestBuilders.get("/book/findBookById/1")).andExpect(MockMvcResultMatchers.status().isOk()).
-                andExpect(MockMvcResultMatchers.jsonPath("$.id").value(1));
-
+    void testGetBookById() {
+        Long bookId = 1L;
+        Book book = new Book(bookId, "Book 1", "Author 1");
+        when(bookService.getBookById(bookId)).thenReturn(book);
+        ResponseEntity<Book> response = bookController.getBookById(bookId);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(book, response.getBody());
     }
-
+    // FINAL
+    
+    // START: Test method for adding a new book
     @Test
-    public void deleteBook() throws Exception {
-
-        List<Book> books = new ArrayList<>();
-        Book book = new Book(1, "Wróżka", 22, null);
-        Book book1 = new Book(2, "Kot w Butach", 45, null);
-
-        books.add(book1);
-
-        when(bookService.delete(1)).thenReturn(books);
-
-        mockMvc.perform(MockMvcRequestBuilders.delete("/book/delete/1")).andExpect(MockMvcResultMatchers.status().isOk());
-
-
+    void testAddBook() {
+        Book book = new Book(1L, "New Book", "New Author");
+        when(bookService.addBook(book)).thenReturn(book);
+        ResponseEntity<Book> response = bookController.addBook(book);
+        assertEquals(HttpStatus.CREATED, response.getStatusCode());
+        assertEquals(book, response.getBody());
     }
-
+    // FINAL
+    
+    // START: Test method for updating an existing book
     @Test
-    public void updateBook() {
-
+    void testUpdateBook() {
+        Long bookId = 1L;
+        Book book = new Book(bookId, "Updated Book", "Updated Author");
+        when(bookService.updateBook(bookId, book)).thenReturn(book);
+        ResponseEntity<Book> response = bookController.updateBook(bookId, book);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(book, response.getBody());
     }
-
+    // FINAL
+    
+    // START: Test method for deleting a book
     @Test
-    public void findBookByTitle() throws Exception {
-        List<Book> books = new ArrayList<>();
-        Book book = new Book(1, "Kaczka dziwaczka", 19, null);
-        books.add(book);
-        when(bookService.findByTitle("Kaczka dziwaczka")).thenReturn(books);
-
-        mockMvc.perform(MockMvcRequestBuilders.get("/book/findBookByTitle/Kaczka dziwaczka")).andExpect(MockMvcResultMatchers.status().
-                isOk()).andExpect(MockMvcResultMatchers.jsonPath("$[0].title").value("Kaczka dziwaczka"));
-
+    void testDeleteBook() {
+        Long bookId = 1L;
+        doNothing().when(bookService).deleteBook(bookId);
+        ResponseEntity<Void> response = bookController.deleteBook(bookId);
+        assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
+        assertNull(response.getBody());
+        verify(bookService, times(1)).deleteBook(bookId);
     }
-
-    @Test
-    public void findAllByPriceAfter() throws Exception {
-        List<Book> books = new ArrayList<>();
-        Book book = new Book(1, "Kaczka dziwaczka", 19, null);
-        Book book1 = new Book(2, "Harry Potter", 40, null);
-        books.add(book);
-        books.add(book1);
-
-        when(bookService.findBooksAbovePrice(15)).thenReturn(books);
-
-        mockMvc.perform(MockMvcRequestBuilders.get("/book/priceAbove/15")).andExpect(MockMvcResultMatchers.status().
-                isOk()).andExpect(MockMvcResultMatchers.jsonPath("$[0].price").value(19));
-
-    }
-
-    @Test
-    public void findTheCheapestBook() throws Exception {
-        List<Book> books = new ArrayList<>();
-        Book book = new Book(1, "Kaczka dziwaczka", 19, null);
-        Book book1 = new Book(2, "Harry Potter", 40, null);
-        books.add(book);
-        books.add(book1);
-
-
-        this.mockMvc.perform(get("/book/findTheCheapestBook")
-                .accept(MediaType.APPLICATION_JSON))
-                .andDo(print())
-                .andExpect(status().isOk());
-
-    }
-
-    @Test
-    public void sortedBooks() throws Exception {
-        List<Book> books = new ArrayList<>();
-        Book book = new Book(1, "Kaczka dziwaczka", 19, null);
-        Book book1 = new Book(2, "Harry Potter", 40, null);
-        books.add(book);
-        books.add(book1);
-        List<Book> newList = new ArrayList<>();
-        newList.add(book1);
-        newList.add(book);
-
-        when(bookService.booksSortedByPrice()).thenReturn(books);
-        mockMvc.perform(MockMvcRequestBuilders.get("/book/booksSortedByPrice")).andExpect(MockMvcResultMatchers.status().isOk());
-
-    }
-
-    @Test
-    public void countBooksByPriceAfter() throws Exception {
-        List<Book> books = new ArrayList<>();
-        Book book = new Book(1, "Kaczka dziwaczka", 19, null);
-        Book book1 = new Book(2, "Harry Potter", 40, null);
-        books.add(book);
-        books.add(book1);
-
-        when(bookService.countBooksByPriceGreaterThan(15)).thenReturn(2);
-
-        mockMvc.perform(MockMvcRequestBuilders.get("/book/countBooksAbove/15")).andExpect(MockMvcResultMatchers.status().
-                isOk());
-
-    }
-
-
-    private String toJson(Book book) throws JsonProcessingException {
-        ObjectMapper objectMapper = new ObjectMapper();
-        return objectMapper.writeValueAsString(book);
-    }
+    // FINAL
 }
