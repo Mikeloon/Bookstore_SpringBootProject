@@ -1,3 +1,28 @@
-- name: Upload Coverage to Codecov
-  uses: codecov/codecov-action@v3
-  env:  CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+name: CodeCov
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Build with Maven
+        run: mvn clean package
+
+      - name: Run tests
+        run: mvn test
+
+      - name: Upload coverage to CodeCov
+        run: mvn jacoco:report && bash <(curl -s https://codecov.io/bash)
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
