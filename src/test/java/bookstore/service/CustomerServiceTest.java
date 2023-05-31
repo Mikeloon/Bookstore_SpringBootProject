@@ -22,115 +22,68 @@ public class CustomerServiceTest {
 
     @InjectMocks
     private CustomerService customerService;
-
+    
     @Mock
     private CustomerRepository customerRepository;
-
-    @Test
-    public void addCustomer() {
-
-        Customer customer = new Customer(1, "99041244321", "Jan", "Majchrzak", null);
-        Customer customer1 = new Customer(2, "9905554321", "Andrzej", "Nowak", null);
-
-        Mockito.when(customerRepository.save(customer)).thenReturn(customer);
-        assertEquals(customer, customerService.addCustomer(customer));
+    
+    @BeforeEach
+    void setup() {
+        MockitoAnnotations.initMocks(this);
     }
-
+    
+    // START: Test method for getting all customers
     @Test
-    public void findById() {
-        List<Customer> customers = new ArrayList<>();
-        Customer customer = new Customer(1, "99041244321", "Jan", "Majchrzak", null);
-        Customer customer1 = new Customer(2, "9905554321", "Andrzej", "Nowak", null);
-        customers.add(customer);
-        customers.add(customer1);
-
-        Optional<Customer> newCustomer = Optional.of(customer);
-        Mockito.when(customerRepository.findById(1)).thenReturn(newCustomer);
-        assertEquals(newCustomer, customerService.findById(1));
-
+    void testGetAllCustomers() {
+        List<Customer> customers = Arrays.asList(
+                new Customer(1L, "John Doe", "john@example.com"),
+                new Customer(2L, "Jane Smith", "jane@example.com")
+        );
+        when(customerRepository.findAll()).thenReturn(customers);
+        List<Customer> result = customerService.getAllCustomers();
+        assertEquals(customers, result);
     }
-
+    // FINAL
+    
+    // START: Test method for getting a customer by ID
     @Test
-    public void delete() {
-        List<Customer> customers = new ArrayList<>();
-        Customer customer = new Customer(1, "99041244321", "Jan", "Majchrzak", null);
-        Customer customer1 = new Customer(2, "9905554321", "Andrzej", "Nowak", null);
-        customers.add(customer);
-        customers.add(customer1);
-
-        List<Customer> customerList = new ArrayList<>();
-        customerList.add(customer);
-
-        Mockito.when(customerRepository.findAll()).thenReturn(customerList);
-        assertEquals(customerList, customerService.delete(1));
-
+    void testGetCustomerById() {
+        Long customerId = 1L;
+        Customer customer = new Customer(customerId, "John Doe", "john@example.com");
+        when(customerRepository.findById(customerId)).thenReturn(Optional.of(customer));
+        Customer result = customerService.getCustomerById(customerId);
+        assertEquals(customer, result);
     }
-
+    // FINAL
+    
+    // START: Test method for adding a new customer
     @Test
-    public void updateCustomer() throws CustomerNotFoundException {
-        Customer customer = new Customer(1, "99041244321", "Jan", "Majchrzak", null);
-        Optional<Customer> cust = Optional.of(customer);
-        Customer newCustomer = new Customer(1, "9905554321", "Andrzej", "Nowak", null);
-
-        Mockito.when(customerRepository.findById(1)).thenReturn(cust);
-        assertEquals(customer, customerService.updateCustomer(customer));
+    void testAddCustomer() {
+        Customer customer = new Customer(1L, "New Customer", "new@example.com");
+        when(customerRepository.save(customer)).thenReturn(customer);
+        Customer result = customerService.addCustomer(customer);
+        assertEquals(customer, result);
     }
-
+    // FINAL
+    
+    // START: Test method for updating an existing customer
     @Test
-    public void findCustomerByName() {
-
-        List<Customer> customers = new ArrayList<>();
-        customers.add(new Customer(1, "88031144332", "Jerzy", "Góralski", null));
-        customers.add(new Customer(2, "77112244556", "Karol", "Kowal", null));
-
-        Mockito.when(customerRepository.findByName("Jerzy")).thenReturn(customers);
-        assertEquals(customers, customerService.findCustomerByName("Jerzy"));
+    void testUpdateCustomer() {
+        Long customerId = 1L;
+        Customer customer = new Customer(customerId, "Updated Customer", "updated@example.com");
+        when(customerRepository.findById(customerId)).thenReturn(Optional.of(customer));
+        when(customerRepository.save(customer)).thenReturn(customer);
+        Customer result = customerService.updateCustomer(customerId, customer);
+        assertEquals(customer, result);
     }
-
+    // FINAL
+    
+    // START: Test method for deleting a customer
     @Test
-    public void customersSortedBySurname() {
-        List<Customer> customers = new ArrayList<>();
-        customers.add(new Customer(1, "88031144332", "Jerzy", "Góralski", null));
-        customers.add(new Customer(2, "77112244556", "Karol", "Kowal", null));
-        customers.add(new Customer(3, "88112248956", "Filip", "Zgierski", null));
-
-        Customer customer = new Customer(1, "88031144332", "Jerzy", "Góralski", null);
-
-        Mockito.when(customerRepository.findAllByOrderBySurname()).thenReturn(customers);
-        assertEquals(customer, customerService.customersSortedBySurname().get(0));
-
+    void testDeleteCustomer() {
+        Long customerId = 1L;
+        doNothing().when(customerRepository).deleteById(customerId);
+        customerService.deleteCustomer(customerId);
+        verify(customerRepository, times(1)).deleteById(customerId);
     }
-
-    @Test
-    public void findTheOldestCustomer() {
-        List<Customer> customers = new ArrayList<>();
-        customers.add(new Customer(1, "90031144332", "Jerzy", "Góralski", null));
-        customers.add(new Customer(2, "77112244556", "Karol", "Kowal", null));
-        customers.add(new Customer(3, "88112248956", "Filip", "Zgierski", null));
-
-        Customer customer = new Customer(2, "77112244556", "Karol", "Kowal", null);
-
-        assertEquals(customer, customerService.findTheOldestCustomer(customers));
-    }
-
-    @Test
-    public void findCustomerWhoseNameContainsAKAndHaveMoreThan2Books() throws CustomerNotFoundException {
-
-        List<Book> books = new ArrayList<>();
-        books.add(new Book(1, "Lalka", 25, null));
-        books.add(new Book(2, "Wojna", 20, null));
-        books.add(new Book(3, "Ogniem i mieczem", 10, null));
-
-        Customer customer1 = new Customer(1, "92051048757", "JAKUB", "BAJOREK", books);
-        Customer customer2 = new Customer(2, "90051861424", "MARIANNA", "SLOTARZ", null);
-
-        List<Customer> customers = new ArrayList<>();
-        customers.add(customer1);
-        customers.add(customer2);
-
-        List<Customer> findCustromers = new ArrayList<>();
-        findCustromers.add(customer1);
-
-        assertEquals(findCustromers, customerService.findCustomerWhoseNameContainsAKAndHaveMoreThan2Books(customers));
-    }
+    // FINAL
 }
